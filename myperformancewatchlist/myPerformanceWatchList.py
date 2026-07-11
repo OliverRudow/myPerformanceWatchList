@@ -16,7 +16,7 @@ from mytuple import myTuple
 from mydatabase import mySQLDataBase
 from myfilebase import myFileBase
 from mysharesdefinition import myPerformanceWatchListDefinitions
-from watchlist_me import myTableSQLPerformanceWatchList, myTableSQLPerformanceCreditWatchList
+from myperformancewatchlist import myTableSQLPerformanceWatchList, myTableSQLPerformanceCreditWatchList
 from myyfinance import myYFinance
 
 
