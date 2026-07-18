@@ -12,7 +12,7 @@ pip install myperformancewatchlist
 
 Since this package contains multiple files, here is a quick overview of how the modules interact:
 
-mySharesDefinition/   
+myPerformanceWatchList/   
 ├── __init__.py.    
 ├── myPerformanceWatchList.py.                   
 ├── myTableSQLPerformanceCreditWatchList.py.     
