@@ -59,15 +59,15 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
     _my_file: myFileBase.MyFileBase = dataclasses.field(repr=False, default_factory=type(myFileBase.MyFileBase))
 
     # YFinance
-    _my_y_finance: myYFinance.MyYFinance = dataclasses.field(repr=False, default=type(myYFinance.MyYFinance))
+    _my_y_finance: myYFinance.MyYFinance = dataclasses.field(repr=False, default_factory=type(myYFinance.MyYFinance))
 
     # SQL Table Static Watch List
     _my_table_sql_performance_watch_list: myTableSQLPerformanceWatchList.MyTableSQLPerformanceWatchList = (
-        dataclasses.field(repr=False, default=None))
+        dataclasses.field(repr=False, default_factory=type(myTableSQLPerformanceWatchList.MyTableSQLPerformanceWatchList)))
 
     # SQL Table Performance Credit Watch List
     _my_table_sql_performance_credit_watch_list: myTableSQLPerformanceCreditWatchList.MyTableSQLPerformanceCreditWatchList = (
-        dataclasses.field(repr=False, default=None))
+        dataclasses.field(repr=False, default_factory=type( myTableSQLPerformanceCreditWatchList.MyTableSQLPerformanceCreditWatchList)))
 
     # flag_scan_watch_list
     _flag_scan_watch_list: bool = dataclasses.field(repr=False, default=True)
@@ -103,7 +103,7 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
     _int_performance_watch_list_two_hundred_day_momentum_column_index: int = dataclasses.field(repr=False, default=0)
 
     # table data as list of dict from SQL Data Base
-    _list_table_data: list = dataclasses.field(repr=False, default=list)
+    _list_table_data: list = dataclasses.field(repr=False, default_factory=list)
 
     _int_actual_quote_index: int = dataclasses.field(repr=False, default=0)
 
@@ -111,7 +111,7 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
 
     _str_actual_quote_isin: str = dataclasses.field(repr=False, default='')
 
-    _list_column_names: list = dataclasses.field(repr=False, default=list)
+    _list_column_names: list = dataclasses.field(repr=False, default_factory=list)
 
     _int_num_columns: int = dataclasses.field(repr=False, default=0)
 
@@ -121,15 +121,15 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
 
     _float_std_dev_change_percent: float = dataclasses.field(repr=False, default=0)
 
-    _list_sectors: list = dataclasses.field(repr=False, default=list)
+    _list_sectors: list = dataclasses.field(repr=False, default_factory=list)
 
-    _list_industries: list = dataclasses.field(repr=False, default=list)
+    _list_industries: list = dataclasses.field(repr=False, default_factory=list)
 
-    _list_sectors_change_percent_table: list = dataclasses.field(repr=False, default=list)
+    _list_sectors_change_percent_table: list = dataclasses.field(repr=False, default_factory=list)
 
-    _list_industries_change_percent_table: list = dataclasses.field(repr=False, default=list)
+    _list_industries_change_percent_table: list = dataclasses.field(repr=False, default_factory=list)
 
-    _list_sectors_change_percent_score_table: list = dataclasses.field(repr=False, default=list)
+    _list_sectors_change_percent_score_table: list = dataclasses.field(repr=False, default_factory=list)
 
     def __init__(self, y_finance: myYFinance.MyYFinance,
                  str_working_directory: Optional[str] = None,
@@ -443,7 +443,7 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
 
     def evaluate_performance_credits(self) -> None:
 
-        # performance watch lists offer a date and thus we need to transfer into the performance credit watch list the latest one
+        # performance watch lists offer a date, and thus we need to transfer into the performance credit watch list the latest one
         self._transfer_latest_table_name()
 
         self._get_available_performance_watch_list_tables()
@@ -495,6 +495,7 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
                 _list_helper = []
 
                 if not _str_sector == '':
+
                     _list_helper.append(_str_sector)
 
                     _list_helper.append(element[1])
@@ -563,13 +564,7 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
 
         _list_industries_percentage.insert(0, ('Industries', '# Quotes', '%'))
 
-        if _list_industries_percentage.__len__() > 21:
-
-            self._list_industries_change_percent_table = _list_industries_percentage[0:20]
-
-        else:
-
-            self._list_industries_change_percent_table = _list_industries_percentage
+        self._list_industries_change_percent_table = _list_industries_percentage
 
     def get_segmented_average_change_percent(self) -> list:
 
