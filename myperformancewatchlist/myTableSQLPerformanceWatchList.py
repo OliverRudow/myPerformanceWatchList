@@ -142,7 +142,7 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
     # Variables for use with SQLite3
     _str_insert_string: str = dataclasses.field(repr=False, default='')
 
-    _list_entire_row: list = dataclasses.field(repr=False, default=list)
+    _list_entire_row: list = dataclasses.field(repr=False, default_factory=list)
 
     def __init__(self, the_sql_connection: sqlite3.Connection,
                  the_sql_cursor: sqlite3.Cursor,
@@ -162,15 +162,33 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
         self.set_flag_clean_preceded_tables(myPerformanceWatchListDefinitions.DATA_BASE_FLAG_CLEAN_PRECEDED_DATA)
         self.set_number_preceded_tables(myPerformanceWatchListDefinitions.DATA_BASE_INT_NUMBER_PRECEDED_DATA)
 
+        self._get_available_performance_watch_list_tables()
+
         # flag scan watch list true = creates a new watch list
         self.set_flag_scan_watch_list(flag_scan_watch_list)
 
-        if self._flag_clean_preceded_tables:
-            self.clean_preceded_tables(self._str_table_name)
+        if self._flag_scan_watch_list:
+            # write modus
 
-        # add date to table name
-        if self._flag_add_date_2_file_name:
-            self.set_table_name(myAuxiliary.add_date_2_object_name(self.get_table_name, 'tailing'))
+            if self._flag_clean_preceded_tables:
+
+                self.clean_preceded_tables(self._str_table_name)
+
+            # add date to table name
+            if self._flag_add_date_2_file_name:
+
+                self.set_table_name(myAuxiliary.add_date_2_object_name(self.get_table_name, 'tailing'))
+
+        else:
+            # read only modus
+
+            if self._list_performance_watch_list_tables.__len__() > 0:
+
+                self.set_table_name(self._list_performance_watch_list_tables[0])
+
+            else:
+
+                self.set_table_name(myPerformanceWatchListDefinitions.STR_DATA_BASE_TABLE_NAME)
 
         # column quote isin
         my_special_tuple = myPerformanceWatchListDefinitions.TUPLE_PERFORMANCE_WATCH_LIST_QUOTE_ISIN
@@ -385,10 +403,8 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
 
             self.create_sql_data_base_table()
 
-        self._get_available_performance_watch_list_tables()
-
         # create SQL insert string for entire row
-        self.helper_sql_data_base_insert_entire_row_string()
+        self._helper_sql_data_base_insert_entire_row_string()
 
     def _init_performance_watch_list_columns(self) -> None:
 
@@ -422,7 +438,7 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
         self._int_performance_watch_list_bid_size_column_index = self.get_column_index_from_list(
             myPerformanceWatchListDefinitions.TUPLE_PERFORMANCE_WATCH_LIST_BID_SIZE)
 
-        self._str_performance_watch_list_curent_price_column_name = self.get_column_name_from_dict(
+        self._str_performance_watch_list_current_price_column_name = self.get_column_name_from_dict(
             myPerformanceWatchListDefinitions.TUPLE_PERFORMANCE_WATCH_LIST_CURRENT_PRICE)
 
         self._int_performance_watch_list_current_price_column_index = self.get_column_index_from_list(
@@ -565,6 +581,24 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
         self._int_performance_watch_list_two_hundred_day_momentum_column_index = self.get_column_index_from_list(
             myPerformanceWatchListDefinitions.TUPLE_PERFORMANCE_WATCH_LIST_TWO_HUNDRED_DAY_MOMENTUM)
 
+    def _helper_sql_data_base_insert_entire_row_string(self) -> None:
+
+        string_column_names: str = ', '.join(list(self._dict_table_columns.values()))
+        # built string question mark
+
+        str_question_mark = '?'
+
+        list_question_marks = []
+
+        for num in range(self._int_table_columns_number):
+            list_question_marks.append(str_question_mark)
+
+        str_question_marks = ', '.join(list_question_marks)
+
+        # built SQL command
+        self._str_insert_string = (f'INSERT OR IGNORE INTO {self._str_sql_schema}.{self._str_table_name} '
+                                  f'({string_column_names}) VALUES ({str_question_marks})')
+
     def _init_source_table(self) -> None:
 
         self._str_source_table_name = myStaticWatchListDefinitions.STR_DATA_BASE_TABLE_NAME
@@ -586,69 +620,62 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
         self._list_performance_watch_list_tables = self.get_sql_set_of_tables(
             myPerformanceWatchListDefinitions.STR_DATA_BASE_TABLE_NAME)
 
-    @property
-    def get_performance_watch_list_quote_isin_column_name(self) -> str:
+    def _set_sql_table_performance_watch_list_entire_row(self) -> None:
+        if self._list_entire_row is not None:
 
-        return self._str_performance_watch_list_quote_isin_column_name
+            if self._list_entire_row.__len__() == self._int_table_columns_number:
 
-    @property
-    def get_available_performance_watch_list_tables(self) -> list[str]:
+                for ind, elem in enumerate(self._list_entire_row):
 
-        return self._list_performance_watch_list_tables
+                    if elem is None:
+                        self._list_entire_row[ind] = ''
 
-    def set_flag_scan_watch_list(self, flag_scan_watch_list: bool) -> None:
+                # check PRIMARY KEY
+                if self._list_entire_row[myPerformanceWatchListDefinitions.INDEX_PRIMARY_KEY] != '':
 
-        self._flag_scan_watch_list = flag_scan_watch_list
+                    self.set_table_entire_row(self._str_insert_string, tuple(self._list_entire_row))
 
-    def helper_sql_data_base_insert_entire_row_string(self) -> None:
+                else:
 
-        string_column_names: str = ', '.join(list(self._dict_table_columns.values()))
-        # built string question mark
+                    print(f'---- Operational Error in {__title__}, {self.set_table_entire_row.__name__},'
+                          f' the primary key is not set!')
+            else:
 
-        str_question_mark = '?'
-
-        list_question_marks = []
-
-        for num in range(self._int_table_columns_number):
-            list_question_marks.append(str_question_mark)
-
-        str_question_marks = ', '.join(list_question_marks)
-
-        # built SQL command
-        self._str_insert_string = (f'INSERT OR IGNORE INTO {self._str_sql_schema}.{self._str_table_name} '
-                                  f'({string_column_names}) VALUES ({str_question_marks})')
+                print(f'---- Operational Error in {__title__}, '
+                      f'{self._set_sql_table_performance_watch_list_entire_row.__name__},'
+                      f' the list_entire_row {self._list_entire_row} does not fit the number of columns requirement!')
 
     def _built_list_entire_row(self) -> None:
 
         self._list_entire_row = [self._str_performance_watch_list_quote_isin_value,
-            self._float_performance_watch_list_ask_value,
-            self._int_performance_watch_list_ask_size_value,
-            self._float_performance_watch_list_bid_value,
-            self._int_performance_watch_list_bid_size_value,
-            self._float_performance_watch_list_current_price_value,
-            self._float_performance_watch_list_day_high_value,
-            self._float_performance_watch_list_interday_momentum_value,
-            self._float_performance_watch_list_day_low_value,
-            self._float_performance_watch_list_relative_daily_span_value,
-            self._float_performance_watch_list_open_value,
-            self._float_performance_watch_list_previous_close_value,
-            self._float_performance_watch_list_regular_market_change_percent_value,
-            self._float_performance_watch_list_intraday_momentum_value,
-            self._int_performance_watch_list_volume_value,
-            self._int_performance_watch_list_average_volume_value,
-            self._float_performance_watch_list_relative_volume_value,
-            self._int_performance_watch_list_average_daily_volume_10_day_value,
-            self._float_performance_watch_list_relative_volume_10_day_value,
-            self._float_performance_watch_list_beta_value,
-            self._float_performance_watch_list_fifty_two_week_low_column_value,
-            self._float_performance_watch_list_fifty_two_week_low_momentum_column_value,
-            self._float_performance_watch_list_fifty_two_week_high_column_value,
-            self._float_performance_watch_list_fifty_two_week_high_momentum_column_value,
-            self._float_performance_watch_list_fifty_day_average_column_value,
-            self._float_performance_watch_list_fifty_day_momentum_column_value,
-            self._float_performance_watch_list_two_hundred_day_average_column_value,
-            self._float_performance_watch_list_two_hundred_day_momentum_column_value,
-        ]
+                                 self._float_performance_watch_list_ask_value,
+                                 self._int_performance_watch_list_ask_size_value,
+                                 self._float_performance_watch_list_bid_value,
+                                 self._int_performance_watch_list_bid_size_value,
+                                 self._float_performance_watch_list_current_price_value,
+                                 self._float_performance_watch_list_day_high_value,
+                                 self._float_performance_watch_list_interday_momentum_value,
+                                 self._float_performance_watch_list_day_low_value,
+                                 self._float_performance_watch_list_relative_daily_span_value,
+                                 self._float_performance_watch_list_open_value,
+                                 self._float_performance_watch_list_previous_close_value,
+                                 self._float_performance_watch_list_regular_market_change_percent_value,
+                                 self._float_performance_watch_list_intraday_momentum_value,
+                                 self._int_performance_watch_list_volume_value,
+                                 self._int_performance_watch_list_average_volume_value,
+                                 self._float_performance_watch_list_relative_volume_value,
+                                 self._int_performance_watch_list_average_daily_volume_10_day_value,
+                                 self._float_performance_watch_list_relative_volume_10_day_value,
+                                 self._float_performance_watch_list_beta_value,
+                                 self._float_performance_watch_list_fifty_two_week_low_column_value,
+                                 self._float_performance_watch_list_fifty_two_week_low_momentum_column_value,
+                                 self._float_performance_watch_list_fifty_two_week_high_column_value,
+                                 self._float_performance_watch_list_fifty_two_week_high_momentum_column_value,
+                                 self._float_performance_watch_list_fifty_day_average_column_value,
+                                 self._float_performance_watch_list_fifty_day_momentum_column_value,
+                                 self._float_performance_watch_list_two_hundred_day_average_column_value,
+                                 self._float_performance_watch_list_two_hundred_day_momentum_column_value,
+                                 ]
 
     def _get_sql_table_performance_watch_list_quote_per_isin(self, str_isin: str) -> bool:
 
@@ -880,6 +907,20 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
 
             return False
 
+    @property
+    def get_performance_watch_list_quote_isin_column_name(self) -> str:
+
+        return self._str_performance_watch_list_quote_isin_column_name
+
+    @property
+    def get_available_performance_watch_list_tables(self) -> list[str]:
+
+        return self._list_performance_watch_list_tables
+
+    def set_flag_scan_watch_list(self, flag_scan_watch_list: bool) -> None:
+
+        self._flag_scan_watch_list = flag_scan_watch_list
+
     def check_sql_table_performance_watch_list_is_quote_per_isin(self, str_isin: str) -> bool:
 
         str_text = (f'SELECT * FROM {self._str_sql_schema}.{self._str_table_name} '
@@ -914,31 +955,6 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
                 exit(1)
 
         return bool_result
-
-    def _set_sql_table_performance_watch_list_entire_row(self) -> None:
-        if self._list_entire_row is not None:
-
-            if self._list_entire_row.__len__() == self._int_table_columns_number:
-
-                for ind, elem in enumerate(self._list_entire_row):
-
-                    if elem is None:
-                        self._list_entire_row[ind] = ''
-
-                # check PRIMARY KEY
-                if self._list_entire_row[myPerformanceWatchListDefinitions.INDEX_PRIMARY_KEY] != '':
-
-                    self.set_table_entire_row(self._str_insert_string, tuple(self._list_entire_row))
-
-                else:
-
-                    print(f'---- Operational Error in {__title__}, {self.set_table_entire_row.__name__},'
-                          f' the primary key is not set!')
-            else:
-
-                print(f'---- Operational Error in {__title__}, '
-                      f'{self._set_sql_table_performance_watch_list_entire_row.__name__},'
-                      f' the list_entire_row {self._list_entire_row} does not fit the number of columns requirement!')
 
     def del_sql_table_performance_watch_list_single_quote(self, str_isin: str) -> None:
 
@@ -1415,6 +1431,43 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
         else:
 
             return 0
+
+    def get_performance_watch_list_date_per_quote_isin(self, str_quote_isin: str) -> dict:
+
+        _data = {}
+
+        self._get_sql_table_performance_watch_list_quote_per_isin(str_quote_isin)
+
+        _data[self._str_performance_watch_list_ask_column_name] = self._float_performance_watch_list_ask_value
+        _data[self._str_performance_watch_list_ask_size_column_name] = self._int_performance_watch_list_ask_size_value
+        _data[self._str_performance_watch_list_bid_column_name] = self._float_performance_watch_list_bid_value
+        _data[self._str_performance_watch_list_bid_size_column_name] = self._int_performance_watch_list_bid_size_value
+        _data[self._str_performance_watch_list_current_price_column_name] = self._float_performance_watch_list_current_price_value
+        _data[self._str_performance_watch_list_day_high_column_name] = self._float_performance_watch_list_day_high_value
+        _data[self._str_performance_watch_list_interday_momentum_column_name] = self._float_performance_watch_list_interday_momentum_value
+        _data[self._str_performance_watch_list_day_low_column_name] = self._float_performance_watch_list_day_low_value
+        _data[self._str_performance_watch_list_relative_daily_span_column_name] = self._float_performance_watch_list_relative_daily_span_value
+        _data[self._str_performance_watch_list_open_column_name] = self._float_performance_watch_list_open_value
+        _data[self._str_performance_watch_list_previous_close_column_name] = self._float_performance_watch_list_previous_close_value
+        _data[self._str_performance_watch_list_regular_market_change_percent_column_name] = self._float_performance_watch_list_regular_market_change_percent_value
+        _data[self._str_performance_watch_list_intraday_momentum_column_name] = self._float_performance_watch_list_intraday_momentum_value
+        _data[self._str_performance_watch_list_volume_column_name] = self._int_performance_watch_list_volume_value
+        _data[self._str_performance_watch_list_average_volume_column_name] = self._int_performance_watch_list_average_volume_value
+        _data[self._str_performance_watch_list_relative_volume_column_name] = self._float_performance_watch_list_relative_volume_value
+        _data[self._str_performance_watch_list_average_daily_volume_10_day_column_name] = self._int_performance_watch_list_average_daily_volume_10_day_value
+        _data[self._str_performance_watch_list_relative_volume_10_day_column_name] = self._float_performance_watch_list_relative_volume_10_day_value
+        _data[self._str_performance_watch_list_beta_column_name] = self._float_performance_watch_list_beta_value
+        _data[self._str_performance_watch_list_fifty_two_week_low_column_name] = self._float_performance_watch_list_fifty_two_week_low_column_value
+        _data[self._str_performance_watch_list_fifty_two_week_low_momentum_column_name] = self._float_performance_watch_list_fifty_two_week_low_momentum_column_value
+        _data[self._str_performance_watch_list_fifty_two_week_high_column_name] = self._float_performance_watch_list_fifty_two_week_high_column_value
+        _data[self._str_performance_watch_list_fifty_two_week_high_momentum_column_name] = self._float_performance_watch_list_fifty_two_week_high_momentum_column_value
+        _data[self._str_performance_watch_list_fifty_day_average_column_name] = self._float_performance_watch_list_fifty_day_average_column_value
+        _data[self._str_performance_watch_list_fifty_day_momentum_column_name] = self._float_performance_watch_list_fifty_day_momentum_column_value
+        _data[self._str_performance_watch_list_two_hundred_day_average_column_name] = self._float_performance_watch_list_two_hundred_day_average_column_value
+        _data[self._str_performance_watch_list_two_hundred_day_momentum_column_name] = self._float_performance_watch_list_two_hundred_day_momentum_column_value
+
+        return _data
+
 
 if __name__ == "__main__":
     mySQLDB = mySQLDataBase.MySQLDataBase()

@@ -22,24 +22,33 @@ from myyfinance import myYFinance
 
 def calculate_change_percent_score(performance_value, avg_value, std_dev_value) -> int:
 
-    if performance_value > avg_value + 2 * std_dev_value:
+    if performance_value is None:
 
+        return 0
+
+    elif performance_value > avg_value + 2 * std_dev_value:
+
+        # out-performer
         return 5
 
     elif performance_value > avg_value + 1 * std_dev_value:
 
+        # high-performer
         return 3
 
     elif performance_value > avg_value:
 
+        # performer
         return 1
 
     elif performance_value > avg_value - 1 * std_dev_value:
 
+        # low performer
         return -1
 
     elif performance_value > avg_value - 2 * std_dev_value:
 
+        # under-performer
         return -3
 
     else:
@@ -50,7 +59,39 @@ def calculate_change_percent_score(performance_value, avg_value, std_dev_value) 
 @dataclasses.dataclass(init=False)
 class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
     """
+        myPerformanceWatchList is a Python class that holds the SQLite table of a static watch list comprising the table columns
+            - quote_isin,
+            - ask,
+            - ask_size,
+            - bid,
+            - bid_size,
+            - current_price
+            - day_high,
+            - interday_momentum,
+            - day_low,
+            - relative_daily_span,
+            - open,
+            - previous_close,
+            - regular_market_change_percent,
+            - intraday_momentum,
+            - volume,
+            - average_volume,
+            - relative_volume,
+            - average_daily_volume_10_day,
+            - relative_volume_10_day,
+            - beta,
+            - fifty_two_week_low,
+            - fifty_two_week_low_momentum,
+            - fifty_two_week_high,
+            - fifty_two_week_high_momentum,
+            - fifty_day_average,
+            - fifty_day_momentum,
+            - two_hundred_day_average,
+            - two hundred_day_momentum
 
+        myPerformanceWatchList is working in two different modi, i.e.
+            - read only modus with myYFinance.MyYFinance = None
+            - write modus with myYFinance being active.
     """
     # Tuple Definition
     _index_tuple: myTuple.MyTuple = dataclasses.field(repr=False, default_factory=type(myTuple.MyTuple))
@@ -59,7 +100,7 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
     _my_file: myFileBase.MyFileBase = dataclasses.field(repr=False, default_factory=type(myFileBase.MyFileBase))
 
     # YFinance
-    _my_y_finance: myYFinance.MyYFinance = dataclasses.field(repr=False, default_factory=type(myYFinance.MyYFinance))
+    _my_y_finance: myYFinance.MyYFinance | None = dataclasses.field(repr=False, default_factory=type(myYFinance.MyYFinance))
 
     # SQL Table Static Watch List
     _my_table_sql_performance_watch_list: myTableSQLPerformanceWatchList.MyTableSQLPerformanceWatchList = (
@@ -131,7 +172,7 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
 
     _list_sectors_change_percent_score_table: list = dataclasses.field(repr=False, default_factory=list)
 
-    def __init__(self, y_finance: myYFinance.MyYFinance,
+    def __init__(self, y_finance: Optional[myYFinance.MyYFinance] = None,
                  str_working_directory: Optional[str] = None,
                  str_data_base_filename: Optional[str] = None,
                  flag_scan_watch_list: Optional[bool] = None)-> None:
@@ -143,8 +184,28 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
         # init FileBase w/o Config
         self._my_file = myFileBase.MyFileBase()
 
+        # init scan modus
+        if flag_scan_watch_list is not None:
+
+            self._flag_scan_watch_list = flag_scan_watch_list
+
+        else:
+
+            self._flag_scan_watch_list = True
+
         # init y_finance
-        self._my_y_finance = y_finance
+        if y_finance is not None:
+
+            # write modus
+            self._my_y_finance = y_finance
+
+        else:
+
+            # read only modus
+            self._my_y_finance = None
+
+            # in read only mode the scan flag shall almost be Dalse
+            self._flag_scan_watch_list = False
 
         # init working directory for Data Base
         if str_working_directory is not None:
@@ -163,10 +224,6 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
         else:
 
             self._my_file.set_file_name(myPerformanceWatchListDefinitions.STR_DATA_BASE_FILE_NAME)
-
-        if flag_scan_watch_list is not None:
-
-            self._flag_scan_watch_list = flag_scan_watch_list
 
         self._list_column_names = []
 
@@ -216,26 +273,6 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
         self._list_industries_change_percent_table = []
 
         self._list_sectors_change_percent_score_table = []
-
-    def reset_performance_watch_list(self) -> None:
-
-        self._my_table_sql_performance_watch_list.drop_sql_table()
-
-        self._my_table_sql_performance_watch_list.create_sql_data_base_table()
-
-    def set_sectors_list(self, list_sectors_list: list[tuple]) -> None:
-
-        self._list_sectors = list_sectors_list
-
-    def set_industries_list(self, list_industries_list: list[tuple]) -> None:
-
-        self._list_industries = list_industries_list
-
-    def set_sectors_change_percent_score_list(self) -> None:
-
-        self._calculate_sectors_average_change_percent()
-
-        self._my_table_sql_performance_credit_watch_list.set_sectors_change_percent_score_list(self._list_sectors_change_percent_score_table)
 
     def _get_table_data(self) -> None:
 
@@ -369,88 +406,9 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
             myPerformanceWatchListDefinitions.TUPLE_PERFORMANCE_WATCH_LIST_TWO_HUNDRED_DAY_MOMENTUM[
                 self._index_tuple.OPTION_NAME])
 
-    def get_table_data(self) -> list:
-
-        return self._list_table_data
-
     def _get_available_performance_watch_list_tables(self) -> None:
 
         self._list_performance_watch_list_tables = self._my_table_sql_performance_watch_list.get_available_performance_watch_list_tables
-
-    @property
-    def get_available_performance_watch_list_tables(self) -> list[str]:
-
-        return self._list_performance_watch_list_tables
-
-    def get_table_column_names(self) -> list:
-
-        return self._list_column_names
-
-    def set_flag_scan_watch_list(self, flag_scan_watch_list: bool) -> None:
-
-        self._flag_scan_watch_list = flag_scan_watch_list
-
-    def set_actual_quote(self, int_index: int) -> None:
-
-        if self._my_table_sql_performance_watch_list.check_sql_data_base_table_is_not_empty():
-
-            try:
-
-                if int_index > self._int_max_quote_index:
-
-                    raise ValueError(f'----- Value Error in {__title__}, {self.set_actual_quote.__name__}: '
-                                     f'the index {int_index} is out of range! -----')
-
-                my_actual_tuple = self._my_table_sql_performance_watch_list.get_table_entire_row(int_index, False)
-
-                self._str_actual_quote_isin = my_actual_tuple[
-                    self._int_performance_watch_list_quote_isin_column_index]
-
-            except ValueError as e:
-
-                print(e)
-
-                exit(1)
-
-    def set_performance_data_of_quote(self, str_quote_isin: str) -> None:
-
-        if not self.check_quote_in_watch_list(str_quote_isin):
-
-            self._my_y_finance.set_actual_quote_isin(str_quote_isin)
-
-            self._my_y_finance.get_actual_quote_ticker_data_from_y_finance()
-
-            self._my_table_sql_performance_watch_list.set_sql_table_performance_watch_list_entire_row(
-                self._my_y_finance.get_actual_quote_dict_performance_watch_list_data)
-
-    def get_performance_data_of_quote(self) -> None:
-
-        self._my_table_sql_performance_watch_list.set_sql_table_performance_watch_list_entire_row(
-            self._my_y_finance.get_actual_quote_dict_performance_watch_list_data)
-
-    def del_quote(self, str_isin_number: str) -> None:
-
-        self._my_table_sql_performance_watch_list.del_sql_table_performance_watch_list_single_quote(str_isin_number)
-
-    def check_quote_in_watch_list(self, str_isin_number: str) -> bool:
-
-        return self._my_table_sql_performance_watch_list.check_sql_table_performance_watch_list_is_quote_per_isin(
-            str_isin_number)
-
-    def get_num_quotes_in_watch_list(self) -> int:
-
-        return self._my_table_sql_performance_watch_list.get_table_number_rows()
-
-    def evaluate_performance_credits(self) -> None:
-
-        # performance watch lists offer a date, and thus we need to transfer into the performance credit watch list the latest one
-        self._transfer_latest_table_name()
-
-        self._get_available_performance_watch_list_tables()
-
-        self._my_table_sql_performance_credit_watch_list.set_available_performance_watch_list_tables(self._list_performance_watch_list_tables)
-
-        self._my_table_sql_performance_credit_watch_list.evaluate_performance_credits()
 
     def _calculate_sectors_average_change_percent(self):
 
@@ -476,8 +434,9 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
 
         _list_sectors_percentage.append(('Sector', '# Quotes', '%'))
 
-        _list_helper: list[str|int|float] = ['Total',
-                        self._my_table_sql_performance_watch_list.get_table_number_rows(_str_latest_table_name)]
+        _list_helper: list[str | int | float] = ['Total',
+                                                 self._my_table_sql_performance_watch_list.get_table_number_rows(
+                                                     _str_latest_table_name)]
 
         self._float_average_change_percent = self._my_table_sql_performance_watch_list.get_global_average_change_percent(
             _str_latest_table_name)
@@ -495,7 +454,6 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
                 _list_helper = []
 
                 if not _str_sector == '':
-
                     _list_helper.append(_str_sector)
 
                     _list_helper.append(element[1])
@@ -508,6 +466,9 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
                     _list_sectors_percentage.append(tuple(_list_helper))
 
                     _list_change_percent.append(_float_single_change_percent)
+
+        # remove None
+        _list_change_percent = [0 if x is None else x for x in _list_change_percent]
 
         self._list_sectors_change_percent_table = _list_sectors_percentage
 
@@ -548,7 +509,6 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
                 _list_helper = []
 
                 if not _str_industry == '':
-
                     _list_helper.append(_str_industry)
 
                     _list_helper.append(element[1])
@@ -560,11 +520,126 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
 
                     _list_industries_percentage.append(tuple(_list_helper))
 
+        _list_industries_percentage = [(t[0], t[1], 0 if t[2] is None else t[2]) for t in _list_industries_percentage]
+
         _list_industries_percentage = sorted(_list_industries_percentage, key=lambda x: x[2], reverse=True)
 
         _list_industries_percentage.insert(0, ('Industries', '# Quotes', '%'))
 
         self._list_industries_change_percent_table = _list_industries_percentage
+
+    def reset_performance_watch_list(self) -> None:
+
+        self._my_table_sql_performance_watch_list.drop_sql_table()
+
+        self._my_table_sql_performance_watch_list.create_sql_data_base_table()
+
+    def set_sectors_list(self, list_sectors_list: list[tuple]) -> None:
+
+        self._list_sectors = list_sectors_list
+
+    def set_industries_list(self, list_industries_list: list[tuple]) -> None:
+
+        self._list_industries = list_industries_list
+
+    def set_sectors_change_percent_score_list(self) -> None:
+
+        self._calculate_sectors_average_change_percent()
+
+        self._my_table_sql_performance_credit_watch_list.set_sectors_change_percent_score_list(self._list_sectors_change_percent_score_table)
+
+    def get_table_data(self) -> list:
+
+        return self._list_table_data
+
+    @property
+    def get_available_performance_watch_list_tables(self) -> list[str]:
+
+        return self._list_performance_watch_list_tables
+
+    def get_table_column_names(self) -> list:
+
+        return self._list_column_names
+
+    def set_flag_scan_watch_list(self, flag_scan_watch_list: bool) -> None:
+
+        self._flag_scan_watch_list = flag_scan_watch_list
+
+    def set_actual_quote(self, int_index: int) -> None:
+
+        if self._my_table_sql_performance_watch_list.check_sql_data_base_table_is_not_empty():
+
+            try:
+
+                if int_index > self._int_max_quote_index:
+
+                    raise ValueError(f'----- Value Error in {__title__}, {self.set_actual_quote.__name__}: '
+                                     f'the index {int_index} is out of range! -----')
+
+                my_actual_tuple = self._my_table_sql_performance_watch_list.get_table_entire_row(int_index, False)
+
+                self._str_actual_quote_isin = my_actual_tuple[
+                    self._int_performance_watch_list_quote_isin_column_index]
+
+            except ValueError as e:
+
+                print(e)
+
+                exit(1)
+
+    def set_performance_data_of_quote(self, str_quote_isin: str) -> None:
+
+        if self._my_y_finance is not None:
+
+            if not self.check_quote_in_watch_list(str_quote_isin):
+
+                self._my_y_finance.set_actual_quote_isin(str_quote_isin)
+
+                self._my_y_finance.get_actual_quote_ticker_data_from_y_finance()
+
+                self._my_table_sql_performance_watch_list.set_sql_table_performance_watch_list_entire_row(
+                    self._my_y_finance.get_actual_quote_dict_performance_watch_list_data)
+
+        else:
+
+            print(f'----- Info from {__title__}, {self.set_performance_data_of_quote.__name__}: '
+                  f'Instance y_fiance is None and thus setting of new quotes is not supported!  ')
+
+    def get_performance_data_of_quote(self) -> None:
+
+        if self._my_y_finance is not None:
+
+            self._my_table_sql_performance_watch_list.set_sql_table_performance_watch_list_entire_row(
+                self._my_y_finance.get_actual_quote_dict_performance_watch_list_data)
+
+        else:
+
+            print(f'----- Info from {__title__}, {self.get_performance_data_of_quote.__name__}: '
+                  f'Instance y_fiance is None and thus getting data of new quotes is not supported!  ')
+
+    def del_quote(self, str_isin_number: str) -> None:
+
+        self._my_table_sql_performance_watch_list.del_sql_table_performance_watch_list_single_quote(str_isin_number)
+
+    def check_quote_in_watch_list(self, str_isin_number: str) -> bool:
+
+        return self._my_table_sql_performance_watch_list.check_sql_table_performance_watch_list_is_quote_per_isin(
+            str_isin_number)
+
+    def get_num_quotes_in_watch_list(self) -> int:
+
+        return self._my_table_sql_performance_watch_list.get_table_number_rows()
+
+    def evaluate_performance_credits(self) -> None:
+
+        # performance watch lists offer a date, and thus we need to transfer into the performance credit watch list the latest one
+        self._transfer_latest_table_name()
+
+        self._get_available_performance_watch_list_tables()
+
+        self._my_table_sql_performance_credit_watch_list.set_available_performance_watch_list_tables(self._list_performance_watch_list_tables)
+
+        self._my_table_sql_performance_credit_watch_list.evaluate_performance_credits()
 
     def get_segmented_average_change_percent(self) -> list:
 
@@ -576,10 +651,18 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
 
         return self._list_industries_change_percent_table
 
+    def get_performance_watch_list_data_per_quote_isin(self, str_quote_isin) -> dict:
+
+        return self. _my_table_sql_performance_watch_list.get_performance_watch_list_date_per_quote_isin(str_quote_isin)
+
+
+
 if __name__ == "__main__":
     my_y_finance = myYFinance.MyYFinance()
-    my_watch_list = MyPerformanceWatchList(my_y_finance)
+    my_watch_list = MyPerformanceWatchList(None, '/Users/oliverrudow/PycharmProjects/Data', 'shares_data_base.db')
     # my_watch_list.set_performance_data_of_quote('US0378331005')
     # print(my_watch_list.get_table_column_names())
     print(my_watch_list.get_available_performance_watch_list_tables)
+    print(my_watch_list.check_quote_in_watch_list('US0378331005'))
+    print(my_watch_list.get_performance_watch_list_data_per_quote_isin('US0378331005'))
     my_watch_list.close_sql_data_base()

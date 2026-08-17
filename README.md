@@ -1,6 +1,6 @@
 # myPerformanceWatchList
 
-myPerformanceWatchList is a package that holds the SQLite tables of an performance watch list.
+myPerformanceWatchList is a package that holds the SQLite tables of a performance watch list.
 
 # Installation
 
