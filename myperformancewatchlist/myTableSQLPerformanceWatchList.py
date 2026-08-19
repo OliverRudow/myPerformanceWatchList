@@ -1438,6 +1438,7 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
 
         self._get_sql_table_performance_watch_list_quote_per_isin(str_quote_isin)
 
+        _data[self._str_performance_watch_list_quote_isin_column_name] = self._str_performance_watch_list_quote_isin_value
         _data[self._str_performance_watch_list_ask_column_name] = self._float_performance_watch_list_ask_value
         _data[self._str_performance_watch_list_ask_size_column_name] = self._int_performance_watch_list_ask_size_value
         _data[self._str_performance_watch_list_bid_column_name] = self._float_performance_watch_list_bid_value
