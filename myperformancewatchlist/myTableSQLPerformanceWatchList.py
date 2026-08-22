@@ -11,6 +11,7 @@ __copyright__: str = "Copyright 2026, Brain Center Höfen"
 
 import dataclasses
 import sqlite3
+from typing import Optional
 from mydatabase import mySQLDataBase, myTableSQL
 from myauxiliary import myAuxiliary
 from mysharesdefinition import myPerformanceWatchListDefinitions, myStaticWatchListDefinitions
@@ -146,7 +147,9 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
 
     def __init__(self, the_sql_connection: sqlite3.Connection,
                  the_sql_cursor: sqlite3.Cursor,
-                 flag_scan_watch_list: bool) -> None:
+                 flag_scan_watch_list: bool,
+                 flag_clean_preceded_tables: Optional[bool] = None,
+                 flag_add_date_2_table_name: Optional[bool] = None) -> None:
         super().__init__(the_sql_connection, the_sql_cursor)
 
         self._dict_table_settings = {}
@@ -155,11 +158,42 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
         self.set_sql_data_base_schema(myPerformanceWatchListDefinitions.STR_DATA_BASE_SCHEMA_NAME)
 
         # SQL Table Name
-        self.set_flag_add_date_2_table_name(myPerformanceWatchListDefinitions.DATA_BASE_FLAG_ADD_DATE)
+        if flag_add_date_2_table_name is None:
+
+            # default
+            self.set_flag_add_date_2_table_name(myPerformanceWatchListDefinitions.DATA_BASE_FLAG_ADD_DATE)
+
+        else:
+
+            if isinstance(flag_add_date_2_table_name, bool):
+
+                self.set_flag_add_date_2_table_name(flag_add_date_2_table_name)
+
+            else:
+
+                # default
+                self.set_flag_add_date_2_table_name(myPerformanceWatchListDefinitions.DATA_BASE_FLAG_ADD_DATE)
+
         self.set_table_name(myPerformanceWatchListDefinitions.STR_DATA_BASE_TABLE_NAME)
 
         # delete preceding tables
-        self.set_flag_clean_preceded_tables(myPerformanceWatchListDefinitions.DATA_BASE_FLAG_CLEAN_PRECEDED_DATA)
+        if flag_clean_preceded_tables is None:
+
+            # default
+            self.set_flag_clean_preceded_tables(myPerformanceWatchListDefinitions.DATA_BASE_FLAG_CLEAN_PRECEDED_DATA)
+
+        else:
+
+            if isinstance(flag_clean_preceded_tables, bool):
+
+                self.set_flag_clean_preceded_tables(flag_clean_preceded_tables)
+
+            else:
+
+                # default
+                self.set_flag_clean_preceded_tables(
+                    myPerformanceWatchListDefinitions.DATA_BASE_FLAG_CLEAN_PRECEDED_DATA)
+
         self.set_number_preceded_tables(myPerformanceWatchListDefinitions.DATA_BASE_INT_NUMBER_PRECEDED_DATA)
 
         self._get_available_performance_watch_list_tables()
