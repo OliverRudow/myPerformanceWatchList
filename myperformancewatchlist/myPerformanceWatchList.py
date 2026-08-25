@@ -656,7 +656,6 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
         return self. _my_table_sql_performance_watch_list.get_performance_watch_list_date_per_quote_isin(str_quote_isin)
 
 
-
 if __name__ == "__main__":
     my_y_finance = myYFinance.MyYFinance()
     my_watch_list = MyPerformanceWatchList(None, '/Users/oliverrudow/PycharmProjects/Data', 'shares_data_base.db')

@@ -136,14 +136,14 @@ class MyTableSQLPerformanceCreditWatchList(myTableSQL.MyTableSQL):
     _str_score_table_credit_points_column_name: str = dataclasses.field(repr=False, default='')
     _str_score_table_min_threshold_column_name: str = dataclasses.field(repr=False, default='')
 
-    _list_sectors_change_percent_score: list = dataclasses.field(repr=False, default=list)
+    _list_sectors_change_percent_score: list = dataclasses.field(repr=False, default_factory=list)
 
-    _list_available_performance_watch_list_tables: list = dataclasses.field(repr=False, default=list)
+    _list_available_performance_watch_list_tables: list = dataclasses.field(repr=False, default_factory=list)
 
     # Variables for use with SQLite3
     _str_insert_string: str = dataclasses.field(repr=False, default='')
 
-    _list_entire_row: list = dataclasses.field(repr=False, default=list)
+    _list_entire_row: list = dataclasses.field(repr=False, default_factory=list)
 
     def __init__(self, the_sql_connection: sqlite3.Connection,
                  the_sql_cursor: sqlite3.Cursor) -> None:

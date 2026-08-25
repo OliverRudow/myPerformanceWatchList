@@ -149,7 +149,8 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
                  the_sql_cursor: sqlite3.Cursor,
                  flag_scan_watch_list: bool,
                  flag_clean_preceded_tables: Optional[bool] = None,
-                 flag_add_date_2_table_name: Optional[bool] = None) -> None:
+                 flag_add_date_2_table_name: Optional[bool] = None,
+                 str_table_name: Optional[str] = None) -> None:
         super().__init__(the_sql_connection, the_sql_cursor)
 
         self._dict_table_settings = {}
@@ -174,7 +175,21 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
                 # default
                 self.set_flag_add_date_2_table_name(myPerformanceWatchListDefinitions.DATA_BASE_FLAG_ADD_DATE)
 
-        self.set_table_name(myPerformanceWatchListDefinitions.STR_DATA_BASE_TABLE_NAME)
+        if str_table_name is None:
+
+            # default
+            self.set_table_name(myPerformanceWatchListDefinitions.STR_DATA_BASE_TABLE_NAME)
+
+        else:
+
+            if isinstance(str_table_name, str):
+
+                self.set_table_name(str_table_name)
+
+            else:
+
+                # default
+                self.set_table_name(myPerformanceWatchListDefinitions.STR_DATA_BASE_TABLE_NAME)
 
         # delete preceding tables
         if flag_clean_preceded_tables is None:
@@ -214,14 +229,15 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
                 self.set_table_name(myAuxiliary.add_date_2_object_name(self.get_table_name, 'tailing'))
 
         else:
-            # read only modus
 
+            # read only modus
             if self._list_performance_watch_list_tables.__len__() > 0:
 
                 self.set_table_name(self._list_performance_watch_list_tables[0])
 
             else:
 
+                # default
                 self.set_table_name(myPerformanceWatchListDefinitions.STR_DATA_BASE_TABLE_NAME)
 
         # column quote isin
@@ -436,6 +452,7 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
         if not self._bool_sql_data_base_table and self._flag_scan_watch_list:
 
             self.create_sql_data_base_table()
+            self._get_available_performance_watch_list_tables()
 
         # create SQL insert string for entire row
         self._helper_sql_data_base_insert_entire_row_string()
@@ -1455,6 +1472,43 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
 
             print(f'---- Operational Error in {__title__}, {self.get_industry_category_average_change_percent.__name__} ----, \n'
                   f'---- the Text {_str_text} has caused an Error {err} ! ----')
+
+            exit(1)
+
+        if list_result.__len__() > 0:
+
+            return list_result[0][0]
+
+        else:
+
+            return 0
+
+    def get_performance_watch_list_today_largest_relative_change(self, str_table_name: str) -> dict:
+
+        _str_change_percent_col = self._str_performance_watch_list_regular_market_change_percent_column_name
+
+        _str_isin = self._str_performance_watch_list_quote_isin_column_name
+
+        _str_table_name = str_table_name
+
+        _str_text = (f'SELECT ({_str_isin}, {_str_change_percent_col}) '
+                     f' FROM {_str_table_name} '
+                     f' ORDER BY {_str_change_percent_col} DESC '
+                     f' LIMIT 5')
+
+        try:
+
+            self._my_sql_cursor.execute(_str_text)
+
+            list_result = self._my_sql_cursor.fetchall()
+
+            self._my_sql_connection.commit()
+
+        except sqlite3.OperationalError as err:
+
+            print(
+                f'---- Operational Error in {__title__}, {self.get_performance_watch_list_today_largest_relative_change.__name__} ----, \n'
+                f'---- the Text {_str_text} has caused an Error {err} ! ----')
 
             exit(1)
 

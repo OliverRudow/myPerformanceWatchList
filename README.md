@@ -26,4 +26,6 @@ Link to your full documentation here (e.g., Read the Docs) or briefly describe t
 How can other developers help with the project? Briefly mention how to open issues or submit pull requests.
 
 ## License
-This project is licensed under the [MIT License](https://opensource.org).
+© 2026, Brain Center Höfen. All rights reserved.  
+**Author:** Oliver Rudow (<oliver.rudow@googlemail.com>)  
+**Version:** 0.1.0
