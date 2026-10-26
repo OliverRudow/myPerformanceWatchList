@@ -55,6 +55,11 @@ def calculate_change_percent_score(performance_value, avg_value, std_dev_value) 
 
         return -5
 
+def check_numeric_list(my_list):
+    # Prüft, ob die Liste nicht leer ist UND jedes Element int oder float ist
+    return bool(my_list) and all(isinstance(x, (int, float)) for x in my_list)
+
+
 
 @dataclasses.dataclass(init=False)
 class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
@@ -678,7 +683,11 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
 
             _one: list = self.get_current_price_plus_previous_close_per_quote_isin(str_quote_isin)
 
-            if _one.__len__() == 2:
+            if _one is None:
+
+                result[1] = None
+
+            elif _one.__len__() == 2 and check_numeric_list(_one):
 
                 if _one[0] == 0:
 
@@ -688,11 +697,19 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
 
                     result[1] = round((_one[0] - _one[1]) / _one[0] * 100, 2)
 
+            else:
+
+                result[1] = 0
+
         if _list_tables.__len__() >= 4:
 
             _five: list = self.get_current_price_plus_previous_close_per_quote_isin(str_quote_isin, _list_tables[4])
 
-            if _five.__len__() == 2:
+            if _five is None:
+
+                result[5] = None
+
+            elif _five.__len__() == 2 and check_numeric_list(_five):
 
                 if _five[1] == 0:
 
@@ -702,11 +719,19 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
 
                     result[5] = round((_one[0] - _five[1]) / _five[1] * 100, 2)
 
+            else:
+
+                result[5] = 0
+
         if _list_tables.__len__() >= 19:
 
             _twenty: list = self.get_current_price_plus_previous_close_per_quote_isin(str_quote_isin, _list_tables[19])
 
-            if _twenty.__len__() == 2:
+            if _twenty is None:
+
+                result[5] = None
+
+            elif _twenty.__len__() == 2 and check_numeric_list(_twenty):
 
                 if _twenty[1] == 0:
 
@@ -715,6 +740,10 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
                 else:
 
                     result[20] = round((_one[0] - _twenty[1]) / _twenty[1] * 100, 2)
+
+            else:
+
+                result[20] = 0
 
         return result
 
@@ -727,5 +756,5 @@ if __name__ == "__main__":
     print(table_list)
     print(my_watch_list.check_quote_in_watch_list('US0378331005'))
     # print(my_watch_list.get_performance_watch_list_data_per_quote_isin('US0378331005'))
-    print(my_watch_list.get_performance_change_from_one_five_twenty_days_per_quote_isin('US0378331005'))
+    print(my_watch_list.get_performance_change_from_one_five_twenty_days_per_quote_isin('AT0000743059'))
     my_watch_list.close_sql_data_base()
