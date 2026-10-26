@@ -653,15 +653,79 @@ class MyPerformanceWatchList(mySQLDataBase.MySQLDataBase):
 
     def get_performance_watch_list_data_per_quote_isin(self, str_quote_isin) -> dict:
 
-        return self. _my_table_sql_performance_watch_list.get_performance_watch_list_date_per_quote_isin(str_quote_isin)
+        return self._my_table_sql_performance_watch_list.get_performance_watch_list_data_per_quote_isin(str_quote_isin)
 
+    def get_current_price_plus_previous_close_per_quote_isin(self, str_quote_isin: str, str_table_name: Optional[str] = None) -> list:
+
+        if str_table_name is None:
+
+            return self._my_table_sql_performance_watch_list.get_current_price_plus_previous_close_per_quote_isin(str_quote_isin)
+
+        else:
+
+            return self._my_table_sql_performance_watch_list.get_current_price_plus_previous_close_per_quote_isin(
+                str_quote_isin, str_table_name)
+
+    def get_performance_change_from_one_five_twenty_days_per_quote_isin(self, str_quote_isin: str) -> dict:
+
+        result: dict = {}
+
+        _one: list = []
+
+        _list_tables: list = self.get_available_performance_watch_list_tables
+
+        if _list_tables.__len__() >= 1:
+
+            _one: list = self.get_current_price_plus_previous_close_per_quote_isin(str_quote_isin)
+
+            if _one.__len__() == 2:
+
+                if _one[0] == 0:
+
+                    result[1] = 0
+
+                else:
+
+                    result[1] = round((_one[0] - _one[1]) / _one[0] * 100, 2)
+
+        if _list_tables.__len__() >= 4:
+
+            _five: list = self.get_current_price_plus_previous_close_per_quote_isin(str_quote_isin, _list_tables[4])
+
+            if _five.__len__() == 2:
+
+                if _five[1] == 0:
+
+                    result[5] = 0
+
+                else:
+
+                    result[5] = round((_one[0] - _five[1]) / _five[1] * 100, 2)
+
+        if _list_tables.__len__() >= 19:
+
+            _twenty: list = self.get_current_price_plus_previous_close_per_quote_isin(str_quote_isin, _list_tables[19])
+
+            if _twenty.__len__() == 2:
+
+                if _twenty[1] == 0:
+
+                    result[20] = 0
+
+                else:
+
+                    result[20] = round((_one[0] - _twenty[1]) / _twenty[1] * 100, 2)
+
+        return result
 
 if __name__ == "__main__":
     my_y_finance = myYFinance.MyYFinance()
     my_watch_list = MyPerformanceWatchList(None, '/Users/oliverrudow/PycharmProjects/Data', 'shares_data_base.db')
     # my_watch_list.set_performance_data_of_quote('US0378331005')
     # print(my_watch_list.get_table_column_names())
-    print(my_watch_list.get_available_performance_watch_list_tables)
+    table_list = my_watch_list.get_available_performance_watch_list_tables
+    print(table_list)
     print(my_watch_list.check_quote_in_watch_list('US0378331005'))
-    print(my_watch_list.get_performance_watch_list_data_per_quote_isin('US0378331005'))
+    # print(my_watch_list.get_performance_watch_list_data_per_quote_isin('US0378331005'))
+    print(my_watch_list.get_performance_change_from_one_five_twenty_days_per_quote_isin('US0378331005'))
     my_watch_list.close_sql_data_base()

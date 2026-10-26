@@ -452,6 +452,8 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
         if not self._bool_sql_data_base_table and self._flag_scan_watch_list:
 
             self.create_sql_data_base_table()
+
+            # update list of available watch list tables
             self._get_available_performance_watch_list_tables()
 
         # create SQL insert string for entire row
@@ -1483,44 +1485,7 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
 
             return 0
 
-    def get_performance_watch_list_today_largest_relative_change(self, str_table_name: str) -> dict:
-
-        _str_change_percent_col = self._str_performance_watch_list_regular_market_change_percent_column_name
-
-        _str_isin = self._str_performance_watch_list_quote_isin_column_name
-
-        _str_table_name = str_table_name
-
-        _str_text = (f'SELECT ({_str_isin}, {_str_change_percent_col}) '
-                     f' FROM {_str_table_name} '
-                     f' ORDER BY {_str_change_percent_col} DESC '
-                     f' LIMIT 5')
-
-        try:
-
-            self._my_sql_cursor.execute(_str_text)
-
-            list_result = self._my_sql_cursor.fetchall()
-
-            self._my_sql_connection.commit()
-
-        except sqlite3.OperationalError as err:
-
-            print(
-                f'---- Operational Error in {__title__}, {self.get_performance_watch_list_today_largest_relative_change.__name__} ----, \n'
-                f'---- the Text {_str_text} has caused an Error {err} ! ----')
-
-            exit(1)
-
-        if list_result.__len__() > 0:
-
-            return list_result[0][0]
-
-        else:
-
-            return 0
-
-    def get_performance_watch_list_date_per_quote_isin(self, str_quote_isin: str) -> dict:
+    def get_performance_watch_list_data_per_quote_isin(self, str_quote_isin: str) -> dict:
 
         _data = {}
 
@@ -1558,6 +1523,49 @@ class MyTableSQLPerformanceWatchList(myTableSQL.MyTableSQL):
         _data[self._str_performance_watch_list_two_hundred_day_momentum_column_name] = self._float_performance_watch_list_two_hundred_day_momentum_column_value
 
         return _data
+
+    def get_current_price_plus_previous_close_per_quote_isin(self, str_quote_isin, str_table_name: Optional[str] = None) -> list:
+
+        if str_table_name is None:
+
+            _str_table_name = self._str_table_name
+
+        else:
+
+            _str_table_name = str_table_name
+
+        _str_isin_col = self._str_performance_watch_list_quote_isin_column_name
+        _curr_price_col = self._str_performance_watch_list_current_price_column_name
+        _prev_close_col = self._str_performance_watch_list_previous_close_column_name
+
+        _str_text = (f'SELECT {_curr_price_col}, {_prev_close_col} FROM {self._str_sql_schema}.{_str_table_name} '
+
+                    f'WHERE {_str_isin_col} = "{str_quote_isin}"')
+
+        list_result = []
+
+        if self._my_sql_connection and self._my_sql_cursor:
+
+            try:
+
+                self._my_sql_cursor.execute(_str_text)
+
+                list_result = self._my_sql_cursor.fetchone()
+
+                self._my_sql_connection.commit()
+
+
+            except sqlite3.OperationalError as err:
+
+                print(
+                    f'---- Operational Error in {__title__}, '
+                    f'{self.get_current_price_plus_previous_close_per_quote_isin.__name__} ----, \n'
+                    f'---- the Text {_str_text} has caused an Error {err} ! ----')
+
+                exit(1)
+
+        return list_result
+
 
 
 if __name__ == "__main__":
